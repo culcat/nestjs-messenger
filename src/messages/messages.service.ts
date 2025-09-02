@@ -1,19 +1,25 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Message } from './message.entity';
-import { User } from '../users/user.entity';
+import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Message } from "./message.entity";
+import { User } from "../users/user.entity";
 
 @Injectable()
 export class MessagesService {
   constructor(
     @InjectRepository(Message) private messagesRepo: Repository<Message>,
-    @InjectRepository(User) private usersRepo: Repository<User>,
+    @InjectRepository(User) private usersRepo: Repository<User>
   ) {}
 
   async create(text: string, senderId: number, receiverId: number) {
-    const sender = await this.usersRepo.findOne({ where: { id: senderId } });
-    const receiver = await this.usersRepo.findOne({ where: { id: receiverId } });
+    const sender = await this.usersRepo.findOne({
+      where: { id: senderId },
+      select: ["id", "username"],
+    });
+    const receiver = await this.usersRepo.findOne({
+      where: { id: receiverId },
+      select: ["id", "username"],
+    });
     const msg = this.messagesRepo.create({ text, sender, receiver });
     return this.messagesRepo.save(msg);
   }
@@ -24,8 +30,35 @@ export class MessagesService {
         { sender: { id: user1.id }, receiver: { id: user2.id } },
         { sender: { id: user2.id }, receiver: { id: user1.id } },
       ],
-      relations: ['sender', 'receiver'],
-      order: { createdAt: 'ASC' },
+      relations: ["sender", "receiver"],
+      order: { createdAt: "ASC" },
+    });
+  }
+  async getDialogs(userId: number) {
+    const messages = await this.messagesRepo.find({
+      where: [{ sender: { id: userId } }, { receiver: { id: userId } }],
+      relations: ["sender", "receiver"],
+      order: { createdAt: "DESC" },
+    });
+
+    // Собираем уникальные диалоги с последним сообщением
+    const dialogsMap = new Map<number, any>();
+    for (const msg of messages) {
+      const companionId =
+        msg.sender.id === userId ? msg.receiver.id : msg.sender.id;
+      if (!dialogsMap.has(companionId)) {
+        dialogsMap.set(companionId, msg);
+      }
+    }
+    // Возвращаем массив последних сообщений по каждому диалогу
+    return Array.from(dialogsMap.values());
+  }
+  async getUserMessages(userId: number) {
+    return this.messagesRepo.find({
+      where: [{ sender: { id: userId } }, { receiver: { id: userId } }],
+      relations: ["sender", "receiver"],
+
+      order: { createdAt: "ASC" },
     });
   }
 }
