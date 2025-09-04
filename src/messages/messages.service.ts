@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Raw, Repository } from "typeorm";
 import { Message } from "./message.entity";
 import { User } from "../users/user.entity";
 
@@ -24,16 +24,22 @@ export class MessagesService {
     return this.messagesRepo.save(msg);
   }
 
-  async getConversation(user1: User, user2: User) {
-    return this.messagesRepo.find({
-      where: [
-        { sender: { id: user1.id }, receiver: { id: user2.id } },
-        { sender: { id: user2.id }, receiver: { id: user1.id } },
-      ],
-      relations: ["sender", "receiver"],
-      order: { createdAt: "ASC" },
-    });
-  }
+async getConversation(userId1: number, userId2: number) {
+  return this.messagesRepo.find({
+    where: [
+      {
+        sender: Raw(alias => `${alias} = :userId1`, { userId1 }),
+        receiver: Raw(alias => `${alias} = :userId2`, { userId2 }),
+      },
+      {
+        sender: Raw(alias => `${alias} = :userId2`, { userId2 }),
+        receiver: Raw(alias => `${alias} = :userId1`, { userId1 }),
+      },
+    ],
+    relations: ["sender", "receiver"],
+    order: { createdAt: "ASC" },
+  });
+}
   async getDialogs(userId: number) {
     const messages = await this.messagesRepo.find({
       where: [{ sender: { id: userId } }, { receiver: { id: userId } }],

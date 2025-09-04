@@ -30,18 +30,22 @@ export class MessagesGateway implements OnGatewayConnection {
       client.disconnect();
     }
   }
-  @SubscribeMessage("getConversation")
-  async handleGetConversation(
-    @MessageBody() data: { userId: number },
-    @ConnectedSocket() client: Socket
-  ) {
-    const currentUserId = client.data.userId;
-    const messages = await this.messagesService.getConversation(
-      { id: currentUserId } as any,
-      { id: data.userId } as any
-    );
-    client.emit("conversationHistory", messages);
-  }
+
+@SubscribeMessage("getConversation")
+async handleGetConversation(
+  @MessageBody() data: { userId: number },
+  @ConnectedSocket() client: Socket
+) {
+    const currentUserId = (client as any).userId;
+
+  const messages = await this.messagesService.getConversation(
+    currentUserId,
+    data.userId
+  );
+  console.log(currentUserId);
+  
+  client.emit("conversationHistory", messages);
+}
   @SubscribeMessage("userMessages")
   async handleUserMessages(
     @MessageBody() data: { userId: number },

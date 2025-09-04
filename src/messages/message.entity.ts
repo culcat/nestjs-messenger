@@ -4,6 +4,7 @@ import {
   Column,
   ManyToOne,
   CreateDateColumn,
+  OneToOne,
 } from "typeorm";
 import { User } from "../users/user.entity";
 
@@ -15,11 +16,11 @@ export class Message {
   @Column()
   text: string;
 
-  @ManyToOne(() => User, (user) => user.sentMessages)
-  sender: User;
+@ManyToOne(() => User, (user) => user.sentMessages, { eager: false })
+sender: User;
 
-  @ManyToOne(() => User, (user) => user.receivedMessages)
-  receiver: User;
+@ManyToOne(() => User, (user) => user.receivedMessages, { eager: false })
+receiver: User;
 
   @CreateDateColumn()
   createdAt: Date;
