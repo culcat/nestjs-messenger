@@ -31,21 +31,20 @@ export class MessagesGateway implements OnGatewayConnection {
     }
   }
 
-@SubscribeMessage("getConversation")
-async handleGetConversation(
-  @MessageBody() data: { userId: number },
-  @ConnectedSocket() client: Socket
-) {
+  @SubscribeMessage("getConversation")
+  async handleGetConversation(
+    @MessageBody() data: { userId: number },
+    @ConnectedSocket() client: Socket
+  ) {
     const currentUserId = (client as any).userId;
 
-  const messages = await this.messagesService.getConversation(
-    currentUserId,
-    data.userId
-  );
-  console.log(currentUserId);
-  
-  client.emit("conversationHistory", messages);
-}
+    const messages = await this.messagesService.getConversation(
+      currentUserId,
+      data.userId
+    );
+
+    client.emit("conversationHistory", messages);
+  }
   @SubscribeMessage("userMessages")
   async handleUserMessages(
     @MessageBody() data: { userId: number },
