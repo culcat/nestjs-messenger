@@ -6,10 +6,18 @@ import {
   ApiBearerAuth,
   ApiOperation,
   ApiResponse,
+  ApiProperty,
 } from "@nestjs/swagger";
 
 class ConversationDto {
+  @ApiProperty()
   userId: number;
+  
+  @ApiProperty({ required: false, default: 20 })
+  limit?: number;
+  
+  @ApiProperty({ required: false, default: 1 })
+  page?: number;
 }
 
 @ApiTags("messages")
@@ -23,9 +31,14 @@ export class MessagesController {
   @ApiOperation({ summary: "Получить историю переписки с пользователем" })
   @ApiResponse({ status: 200, description: "Список сообщений" })
   conversation(@Body() dto: ConversationDto, @Request() req) {
-    return this.messagesService.getConversation(
-      { id: req.user.userId } as any,
-      { id: dto.userId } as any
+    const limit = dto.limit || 20;
+    const page = dto.page || 1;
+    
+    return this.messagesService.getConversationPaginated(
+      req.user.userId,
+      dto.userId,
+      limit,
+      page
     );
   }
 }

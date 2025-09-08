@@ -25,21 +25,38 @@ export class MessagesService {
   }
 
 async getConversation(userId1: number, userId2: number) {
-  return this.messagesRepo.find({
-    where: [
-      {
-        sender: Raw(alias => `${alias} = :userId1`, { userId1 }),
-        receiver: Raw(alias => `${alias} = :userId2`, { userId2 }),
-      },
-      {
-        sender: Raw(alias => `${alias} = :userId2`, { userId2 }),
-        receiver: Raw(alias => `${alias} = :userId1`, { userId1 }),
-      },
-    ],
-    relations: ["sender", "receiver"],
-    order: { createdAt: "ASC" },
-  });
+  return this.getConversationPaginated(userId1, userId2, 0, 1);
 }
+async getConversationPaginated(
+    userId1: number, 
+    userId2: number, 
+    limit: number, 
+    page: number
+  ) {
+    const skip = (page - 1) * limit;
+    
+    const [messages, total] = await this.messagesRepo.findAndCount({
+      where: [
+        { sender: { id: userId1 }, receiver: { id: userId2 } },
+        { sender: { id: userId2 }, receiver: { id: userId1 } }
+      ],
+      relations: ["sender", "receiver"],
+      order: { createdAt: "ASC" },
+      skip,
+      take: limit,
+    });
+
+    return {
+      messages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+  }
+
   async getDialogs(userId: number) {
     const messages = await this.messagesRepo.find({
       where: [{ sender: { id: userId } }, { receiver: { id: userId } }],
