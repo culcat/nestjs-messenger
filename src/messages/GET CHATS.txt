@@ -1,0 +1,86 @@
+GET CHATS
+
+{
+    conversations: [
+        {
+            username: 'vladlena',
+            lastMessage: 'Hello',
+            timestamp: '2024-06-10T12:00:00Z'
+        },
+        {
+            username: 'vladlena',
+            lastMessage: 'Hello',
+            timestamp: '2024-06-10T12:00:00Z'
+        },
+        {
+            username: 'vladlena',
+            lastMessage: 'Hello',
+            timestamp: '2024-06-10T12:00:00Z'
+        }
+    ]
+}
+
+GET MESSAGES
+
+body { 
+    username: 'vladlena',
+    limit: 20,
+    page: 1
+}
+
+{
+    messages: [
+        {
+username: 'vladlena',
+            message: 'Hello',
+            timestamp: '2024-06-10T12:00:00Z'
+        },
+        {
+username: 'vladlena',
+
+            message: 'Hi there!',
+            timestamp: '2024-06-10T12:01:00Z'
+        },
+        {
+  username: 'john',
+
+            message: 'How are you?',
+            timestamp: '2024-06-10T12:02:00Z'
+        }
+    ],
+
+    totalMessages: 50,
+}
+
+SOCKET
+
+EMIT
+
+{
+    receiverUsername: 'vladlena',
+    message: 'Hello, how are you?'
+}
+
+ЧЕ ДЕЛАЕТ БЕК 
+он определяет что мессадж эмитнул john
+он ищет среди коннектнутых владлену
+
+ПОТОМ БЕК ДЕЛАЕТ EMIT 
+{
+    from: "john",
+    message: "Hello, how are you?",
+    timestamp: "2024-06-10T12:05:00Z"
+}
+
+В ЭТО ВРЕМЯ ВЛАДлена СИДИТ НА СОКЕТЕ
+
+LISTEM (ВЛАДлена слушает)
+
+socket.on("message", (data) => {
+    // data = {
+    //     from: "john",
+    //     message: "Hello, how are you?",
+    //     timestamp: "2024-06-10T12:05:00Z"
+    // }
+    // update UI with the new message
+});

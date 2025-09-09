@@ -12,10 +12,10 @@ import {
 class ConversationDto {
   @ApiProperty()
   userId: number;
-  
+
   @ApiProperty({ required: false, default: 20 })
   limit?: number;
-  
+
   @ApiProperty({ required: false, default: 1 })
   page?: number;
 }
@@ -33,10 +33,24 @@ export class MessagesController {
   conversation(@Body() dto: ConversationDto, @Request() req) {
     const limit = dto.limit || 20;
     const page = dto.page || 1;
-    
+
     return this.messagesService.getConversationPaginated(
       req.user.userId,
       dto.userId,
+      limit,
+      page
+    );
+  }
+  @UseGuards(JwtAuthGuard)
+  @Post("dialogs")
+  @ApiOperation({ summary: "Получить список диалогов" })
+  @ApiResponse({ status: 200, description: "Список диалогов" })
+  dialogs(@Body() dto: { limit?: number; page?: number }, @Request() req) {
+    const limit = dto.limit || 20;
+    const page = dto.page || 1;
+
+    return this.messagesService.getDialogsPaginated(
+      req.user.userId,
       limit,
       page
     );
