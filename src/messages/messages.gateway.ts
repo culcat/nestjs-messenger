@@ -48,6 +48,7 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       payload.receiverId
     );
 
+    // Отправляем сообщение получателю
     const receiverSocket = this.connectedUsers.get(payload.receiverId);
     if (receiverSocket) {
       receiverSocket.emit("message", {
@@ -55,7 +56,37 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
         message: msg.text,
         timestamp: msg.createdAt
       });
+
+      // Обновляем список сообщений в чате у получателя
+      const conversation = await this.messagesService.getConversation(senderId, payload.receiverId);
+      receiverSocket.emit("update_chat", {
+        companionId: senderId,
+        messages: conversation.messages
+      });
     }
+
+    // Обновляем список сообщений в чате у отправителя
+    const senderSocket = this.connectedUsers.get(senderId);
+    if (senderSocket) {
+      const conversation = await this.messagesService.getConversation(senderId, payload.receiverId);
+      senderSocket.emit("update_chat", {
+        companionId: payload.receiverId,
+        messages: conversation.messages
+      });
+    }
+  }
+
+  @SubscribeMessage("join_chat")
+  async handleJoinChat(
+    client: Socket,
+    payload: { companionId: number }
+  ) {
+    const userId = (client as any).userId;
+    const conversation = await this.messagesService.getConversation(userId, payload.companionId);
+    client.emit("update_chat", {
+      companionId: payload.companionId,
+      messages: conversation.messages
+    });
   }
 
   handleDisconnect(client: Socket) {
