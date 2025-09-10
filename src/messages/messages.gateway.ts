@@ -3,6 +3,7 @@ import {
   SubscribeMessage,
   WebSocketServer,
   OnGatewayConnection,
+  OnGatewayDisconnect,
   MessageBody,
   ConnectedSocket,
 } from "@nestjs/websockets";
@@ -11,7 +12,7 @@ import { MessagesService } from "./messages.service";
 import { JwtService } from "@nestjs/jwt";
 
 @WebSocketGateway({ cors: true })
-export class MessagesGateway implements OnGatewayConnection {
+export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
 
   constructor(
@@ -19,7 +20,7 @@ export class MessagesGateway implements OnGatewayConnection {
     private jwtService: JwtService
   ) {}
 
-  connectedUsers = [];
+  connectedUsers = new Map<number, Socket>();
 
   async handleConnection(client: Socket) {
     try {
@@ -27,7 +28,9 @@ export class MessagesGateway implements OnGatewayConnection {
       const payload = this.jwtService.verify(token, {
         secret: "0e49967d13494e46bcdbcb460b24f308",
       });
-      (client as any).userId = payload.sub;
+      const userId = payload.sub;
+      (client as any).userId = userId;
+      this.connectedUsers.set(userId, client);
     } catch (e) {
       client.disconnect();
     }
@@ -44,6 +47,21 @@ export class MessagesGateway implements OnGatewayConnection {
       senderId,
       payload.receiverId
     );
-    this.server.emit("new_message", msg);
+
+    const receiverSocket = this.connectedUsers.get(payload.receiverId);
+    if (receiverSocket) {
+      receiverSocket.emit("message", {
+        from: msg.sender.username,
+        message: msg.text,
+        timestamp: msg.createdAt
+      });
+    }
+  }
+
+  handleDisconnect(client: Socket) {
+    const userId = (client as any).userId;
+    if (userId) {
+      this.connectedUsers.delete(userId);
+    }
   }
 }
